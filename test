@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mount Dora Middle School - Afternoon Dismissal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Active / Called State Card */
+        .card-active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 12px 25px -5px rgba(16, 185, 129, 0.4), 0 8px 10px -6px rgba(16, 185, 129, 0.2);
+            transform: scale(1.02);
+            border-color: #047857;
+        }
+
+        /* Waiting State Card */
+        .card-waiting {
+            background-color: #ffffff;
+            color: #1e293b;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+            border-color: #cbd5e1;
+        }
+        .card-waiting:hover {
+            background-color: #f8fafc;
+            border-color: #94a3b8;
+        }
+
+        /* Custom toggle switch styling */
+        input:checked ~ .toggle-bg { background-color: #2563eb; }
+        input:checked ~ .dot { transform: translateX(100%); }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen flex flex-col selection:bg-blue-200">
+
+    <!-- Header / Nav -->
+    <header class="bg-[#002855] shadow-lg sticky top-0 z-20 border-b border-blue-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col lg:flex-row justify-between items-center gap-4">
+            
+            <!-- School Name Title & Mode Switcher -->
+            <div class="flex flex-wrap items-center justify-between w-full lg:w-auto gap-3">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl sm:text-3xl font-black text-white tracking-tight">Mount Dora Middle School</h1>
+                    <span id="viewerBadge" class="hidden bg-[#F59E0B] text-[#002855] text-xs font-black px-2.5 py-1 rounded-md uppercase tracking-wider">
+                        Teacher View Mode
+                    </span>
+                </div>
+
+                <!-- Instant In-Page Mode Toggle Button -->
+                <button type="button" id="switchModeBtn" class="bg-blue-900/80 hover:bg-blue-800 text-amber-300 border border-amber-400/40 font-bold py-1.5 px-3 rounded-lg text-xs sm:text-sm transition-all flex items-center gap-1.5 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span id="switchModeText">Switch to Teacher View</span>
+                </button>
+            </div>
+            
+            <!-- Admin Controls -->
+            <div id="adminControls" class="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
+                <!-- Share Button -->
+                <button type="button" id="shareModalBtn" class="shrink-0 bg-blue-900 hover:bg-blue-800 text-white border border-blue-700/60 font-bold py-2.5 px-4 rounded-xl transition-all active:scale-95 flex items-center gap-2 text-sm sm:text-base">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"></path></svg>
+                    <span>Share View Link</span>
+                </button>
+
+                <!-- Edit Mode Switch -->
+                <label class="flex items-center cursor-pointer bg-blue-900/50 hover:bg-blue-900 border border-blue-800 px-3.5 py-2 rounded-xl shrink-0 transition-colors">
+                    <div class="relative">
+                        <input type="checkbox" id="editModeToggle" class="sr-only">
+                        <div class="block bg-slate-600 w-12 h-7 rounded-full transition-colors duration-200 toggle-bg"></div>
+                        <div class="dot absolute left-1 top-1 bg-white w-5 h-5 rounded-full transition-transform duration-200"></div>
+                    </div>
+                    <span class="ml-2.5 text-white font-bold text-sm sm:text-base select-none">Edit Mode</span>
+                </label>
+
+                <!-- Add Group Button -->
+                <button type="button" id="addGroupBtn" class="shrink-0 bg-[#F59E0B] hover:bg-amber-400 text-[#002855] font-bold py-2.5 px-4 rounded-xl transition-all active:scale-95 flex items-center gap-2 text-sm sm:text-base shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"></path></svg>
+                    <span>Add Group</span>
+                </button>
+
+                <!-- Reset All Button -->
+                <button type="button" id="resetBoardBtn" class="shrink-0 bg-red-600 hover:bg-red-500 text-white font-bold py-2.5 px-4 rounded-xl transition-all active:scale-95 flex items-center gap-2 text-sm sm:text-base shadow-md">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                    <span>Reset Board</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- Dismissal Cards Grid -->
+        <div id="dismissalGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Dynamic Grid Items Rendered Here -->
+        </div>
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden flex-col items-center justify-center py-20 text-slate-400 text-center">
+            <svg class="w-20 h-20 mb-4 opacity-40 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            <h2 class="text-2xl font-bold text-slate-600">No Dismissal Groups Configured</h2>
+            <p class="text-slate-500 mt-1 max-w-md">Click <span class="font-bold text-slate-700">'Add Group'</span> in the top header to add bus numbers, car riders, or walk groups.</p>
+        </div>
+    </main>
+
+    <!-- Add/Edit Modal -->
+    <div id="formModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all p-6">
+            <div class="flex justify-between items-center pb-4 mb-4 border-b border-slate-100">
+                <h3 id="modalTitle" class="text-xl font-bold text-slate-800">Add Dismissal Group</h3>
+                <button type="button" id="closeFormBtn" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div>
+                <input type="hidden" id="editingId">
+                <div class="mb-5">
+                    <label class="block text-slate-700 text-sm font-bold mb-2 uppercase tracking-wide" for="groupName">
+                        Group Name / Bus Number
+                    </label>
+                    <input class="appearance-none border-2 border-slate-200 rounded-xl w-full py-3 px-4 text-slate-800 text-lg focus:outline-none focus:border-blue-600 transition-colors" id="groupName" type="text" placeholder="e.g. Bus 12, Car Riders, Walkers...">
+                </div>
+                <div class="flex items-center justify-end gap-3 mt-6">
+                    <button type="button" id="cancelFormBtn" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-5 rounded-xl transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" id="saveFormBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-md transition-colors">
+                        Save Group
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="deleteModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs hidden items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden p-6 text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+            </div>
+            <h3 class="text-xl font-bold text-slate-800 mb-2">Delete Group?</h3>
+            <p class="text-slate-500 text-sm mb-6">Are you sure you want to remove this dismissal group?</p>
+            <input type="hidden" id="deletingId">
+            <div class="flex items-center justify-center gap-3">
+                <button type="button" id="cancelDeleteBtn" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 px-4 rounded-xl transition-colors">
+                    Cancel
+                </button>
+                <button type="button" id="confirmDeleteBtn" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-4 rounded-xl shadow-md transition-colors">
+                    Delete
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share View Link Modal -->
+    <div id="shareModal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs hidden items-center justify-center z-50 p-4 transition-opacity">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden p-6">
+            <div class="flex justify-between items-center pb-3 mb-4 border-b border-slate-100">
+                <h3 class="text-xl font-bold text-slate-800">Share Teacher View Link</h3>
+                <button type="button" id="closeShareBtn" class="text-slate-400 hover:text-slate-600 p-1">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div>
+                <p class="text-slate-600 text-sm mb-4">Send this link to teachers. Teachers in View mode can watch live updates, but admin controls will be hidden so they cannot alter calls.</p>
+                
+                <div class="mb-4">
+                    <label class="block text-slate-500 text-xs font-bold mb-1 uppercase">Share URL</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="shareLinkInput" onclick="this.select()" class="appearance-none border border-slate-300 rounded-xl w-full py-2.5 px-3 text-slate-700 bg-slate-50 text-sm font-mono focus:outline-none focus:border-blue-500" readonly>
+                        <button type="button" id="copyShareLinkBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-4 rounded-xl transition-colors shrink-0 flex items-center gap-1.5 text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                            <span id="copyBtnText">Copy Link</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row gap-2 justify-between items-center">
+                    <span class="text-xs text-slate-500">Preview Mode Options:</span>
+                    <div class="flex gap-2 w-full sm:w-auto">
+                        <button type="button" id="openTeacherTabBtn" class="w-full sm:w-auto text-center inline-flex items-center justify-center gap-1.5 text-xs text-white bg-[#002855] hover:bg-blue-900 font-bold px-4 py-2.5 rounded-xl transition-colors shadow-xs">
+                            <span>Open Teacher Tab</span>
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </button>
+                        <a id="viewerPreviewLink" href="#" target="_blank" rel="noopener noreferrer" class="w-full sm:w-auto text-center inline-flex items-center justify-center gap-1.5 text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 font-bold px-4 py-2.5 rounded-xl transition-colors">
+                            <span>Direct Link</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulletproof Synchronous Script Architecture -->
+    <script>
+        (function() {
+            // Default Fallback Groups
+            const defaultGroups = [
+                { id: '1', name: 'Bus 12', called: false, createdAt: 1 },
+                { id: '2', name: 'Bus 44', called: false, createdAt: 2 },
+                { id: '3', name: 'Car Riders 1st Wave', called: false, createdAt: 3 },
+                { id: '4', name: 'Walkers & Bike Riders', called: false, createdAt: 4 },
+                { id: '5', name: 'Extended Day / After Care', called: false, createdAt: 5 },
+                { id: '6', name: 'Athletics', called: false, createdAt: 6 }
+            ];
+
+            const LOCAL_KEY = 'mdms_dismissal_groups_data';
+            const syncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mdms_dismissal_channel') : null;
+
+            // Global State Variables
+            let groups = [];
+            let isEditMode = false;
+            let isViewer = false;
+
+            // Check mode synchronously
+            function checkMode() {
+                const urlParams = new URLSearchParams(window.location.search);
+                isViewer = urlParams.get('mode') === 'viewer' || window.location.hash === '#viewer';
+            }
+
+            // Sync Groups with LocalStorage & BroadcastChannel
+            function saveGroups() {
+                try {
+                    localStorage.setItem(LOCAL_KEY, JSON.stringify(groups));
+                    if (syncChannel) {
+                        syncChannel.postMessage(groups);
+                    }
+                } catch (e) {
+                    console.warn("Storage sync failed:", e);
+                }
+            }
+
+            function loadGroups() {
+                try {
+                    const data = localStorage.getItem(LOCAL_KEY);
+                    if (data) {
+                        const parsed = JSON.parse(data);
+                        if (Array.isArray(parsed) && parsed.length > 0) {
+                            groups = parsed;
+                            return;
+                        }
+                    }
+                } catch (e) {}
+                groups = [...defaultGroups];
+                saveGroups();
+            }
+
+            // Core UI Render Function
+            function render() {
+                const grid = document.getElementById('dismissalGrid');
+                const emptyState = document.getElementById('emptyState');
+                const adminControls = document.getElementById('adminControls');
+                const viewerBadge = document.getElementById('viewerBadge');
+                const switchText = document.getElementById('switchModeText');
+
+                if (!grid) return;
+
+                // Adjust UI per Mode
+                if (isViewer) {
+                    if (adminControls) adminControls.classList.add('hidden');
+                    if (viewerBadge) viewerBadge.classList.remove('hidden');
+                    if (switchText) switchText.innerText = 'Switch to Admin View';
+                } else {
+                    if (adminControls) adminControls.classList.remove('hidden');
+                    if (viewerBadge) viewerBadge.classList.add('hidden');
+                    if (switchText) switchText.innerText = 'Switch to Teacher View';
+                }
+
+                if (groups.length === 0) {
+                    grid.innerHTML = '';
+                    if (emptyState) emptyState.classList.remove('hidden');
+                    return;
+                } else {
+                    if (emptyState) emptyState.classList.add('hidden');
+                }
+
+                grid.innerHTML = groups.map(group => {
+                    const isCalled = !!group.called;
+                    const cardClass = isCalled ? 'card-active' : 'card-waiting';
+                    const cursorStyle = (isEditMode || isViewer) ? 'cursor-default' : 'cursor-pointer active:scale-98';
+
+                    // Edit Buttons for Admin Edit Mode
+                    const editButtons = (isEditMode && !isViewer) ? `
+                        <div class="absolute top-3 right-3 flex gap-2 z-10">
+                            <button type="button" data-action="edit" data-id="${group.id}" class="p-2.5 bg-white text-blue-900 rounded-xl shadow border border-slate-200 hover:bg-blue-50 transition-colors" title="Rename Group">
+                                <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <button type="button" data-action="delete" data-id="${group.id}" class="p-2.5 bg-white text-red-600 rounded-xl shadow border border-slate-200 hover:bg-red-50 transition-colors" title="Delete Group">
+                                <svg class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
+                    ` : '';
+
+                    // Status Indicator Badge
+                    const statusBadge = isCalled ? `
+                        <div class="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-md text-white font-extrabold text-xs uppercase px-3 py-1 rounded-full mb-2">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                            <span>DISMISSED</span>
+                        </div>
+                    ` : `
+                        <div class="inline-flex items-center gap-1.5 bg-slate-100 text-slate-500 font-bold text-xs uppercase px-3 py-1 rounded-full mb-2">
+                            <span>WAITING</span>
+                        </div>
+                    `;
+
+                    return `
+                        <div data-action="toggle" data-id="${group.id}" class="relative rounded-2xl border-2 p-6 flex flex-col items-center justify-center text-center min-h-[160px] transition-all duration-200 select-none ${cardClass} ${cursorStyle}">
+                            ${editButtons}
+                            ${statusBadge}
+                            <h2 class="text-2xl sm:text-3xl font-black tracking-tight break-words w-full leading-tight pointer-events-none">
+                                ${group.name}
+                            </h2>
+                        </div>
+                    `;
+                }).join('');
+            }
+
+            // Toggle Card State
+            function toggleCard(id) {
+                if (isEditMode || isViewer) return;
+                const grp = groups.find(g => g.id === id);
+                if (grp) {
+                    grp.called = !grp.called;
+                    saveGroups();
+                    render();
+                }
+            }
+
+            // Share URL Generator
+            function getViewerUrl() {
+                const base = window.location.href.split('?')[0].split('#')[0];
+                return `${base}?mode=viewer`;
+            }
+
+            // App Setup Event Handlers
+            function bindEvents() {
+                // Event Delegation for Cards Grid
+                const grid = document.getElementById('dismissalGrid');
+                if (grid) {
+                    grid.addEventListener('click', (e) => {
+                        const targetBtn = e.target.closest('[data-action]');
+                        if (!targetBtn) return;
+
+                        const action = targetBtn.getAttribute('data-action');
+                        const id = targetBtn.getAttribute('data-id');
+
+                        if (action === 'toggle') {
+                            toggleCard(id);
+                        } else if (action === 'edit') {
+                            e.stopPropagation();
+                            openEditModal(id);
+                        } else if (action === 'delete') {
+                            e.stopPropagation();
+                            openDeleteModal(id);
+                        }
+                    });
+                }
+
+                // In-Page View Mode Switcher
+                const switchBtn = document.getElementById('switchModeBtn');
+                if (switchBtn) {
+                    switchBtn.addEventListener('click', () => {
+                        isViewer = !isViewer;
+                        render();
+                    });
+                }
+
+                // Edit Mode Toggle Switch
+                const editToggle = document.getElementById('editModeToggle');
+                if (editToggle) {
+                    editToggle.addEventListener('change', (e) => {
+                        isEditMode = e.target.checked;
+                        render();
+                    });
+                }
+
+                // Reset All
+                const resetBtn = document.getElementById('resetBoardBtn');
+                if (resetBtn) {
+                    resetBtn.addEventListener('click', () => {
+                        if (isViewer) return;
+                        groups.forEach(g => g.called = false);
+                        saveGroups();
+                        render();
+                    });
+                }
+
+                // Add Group Modal Controls
+                const addBtn = document.getElementById('addGroupBtn');
+                if (addBtn) {
+                    addBtn.addEventListener('click', () => {
+                        if (isViewer) return;
+                        document.getElementById('modalTitle').innerText = 'Add Dismissal Group';
+                        document.getElementById('editingId').value = '';
+                        document.getElementById('groupName').value = '';
+                        showModal('formModal');
+                        setTimeout(() => document.getElementById('groupName').focus(), 50);
+                    });
+                }
+
+                document.getElementById('closeFormBtn')?.addEventListener('click', () => hideModal('formModal'));
+                document.getElementById('cancelFormBtn')?.addEventListener('click', () => hideModal('formModal'));
+                document.getElementById('saveFormBtn')?.addEventListener('click', saveFormGroup);
+
+                document.getElementById('groupName')?.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveFormGroup();
+                    }
+                });
+
+                // Delete Modal Controls
+                document.getElementById('closeDeleteBtn')?.addEventListener('click', () => hideModal('deleteModal'));
+                document.getElementById('cancelDeleteBtn')?.addEventListener('click', () => hideModal('deleteModal'));
+                document.getElementById('confirmDeleteBtn')?.addEventListener('click', () => {
+                    const id = document.getElementById('deletingId').value;
+                    if (id) {
+                        groups = groups.filter(g => g.id !== id);
+                        saveGroups();
+                        render();
+                    }
+                    hideModal('deleteModal');
+                });
+
+                // Share Modal Controls
+                document.getElementById('shareModalBtn')?.addEventListener('click', () => {
+                    const url = getViewerUrl();
+                    const input = document.getElementById('shareLinkInput');
+                    const link = document.getElementById('viewerPreviewLink');
+                    if (input) input.value = url;
+                    if (link) link.href = url;
+                    showModal('shareModal');
+                });
+
+                document.getElementById('closeShareBtn')?.addEventListener('click', () => hideModal('shareModal'));
+                
+                document.getElementById('copyShareLinkBtn')?.addEventListener('click', () => {
+                    const input = document.getElementById('shareLinkInput');
+                    if (!input) return;
+                    input.select();
+                    try {
+                        if (navigator.clipboard) {
+                            navigator.clipboard.writeText(input.value);
+                        } else {
+                            document.execCommand('copy');
+                        }
+                        const txt = document.getElementById('copyBtnText');
+                        if (txt) {
+                            txt.innerText = 'Copied!';
+                            setTimeout(() => txt.innerText = 'Copy Link', 2000);
+                        }
+                    } catch (err) {}
+                });
+
+                document.getElementById('openTeacherTabBtn')?.addEventListener('click', () => {
+                    const url = getViewerUrl();
+                    try {
+                        if (window.top) {
+                            window.top.open(url, '_blank');
+                        } else {
+                            window.open(url, '_blank');
+                        }
+                    } catch (e) {
+                        window.open(url, '_blank');
+                    }
+                });
+
+                // BroadcastChannel and Storage Synchronization
+                if (syncChannel) {
+                    syncChannel.onmessage = (e) => {
+                        if (Array.isArray(e.data)) {
+                            groups = e.data;
+                            render();
+                        }
+                    };
+                }
+
+                window.addEventListener('storage', (e) => {
+                    if (e.key === LOCAL_KEY) {
+                        try {
+                            const updated = JSON.parse(e.newValue || '[]');
+                            if (Array.isArray(updated) && updated.length > 0) {
+                                groups = updated;
+                                render();
+                            }
+                        } catch(err) {}
+                    }
+                });
+            }
+
+            function openEditModal(id) {
+                const grp = groups.find(g => g.id === id);
+                if (!grp) return;
+                document.getElementById('modalTitle').innerText = 'Edit Group Name';
+                document.getElementById('editingId').value = id;
+                document.getElementById('groupName').value = grp.name;
+                showModal('formModal');
+                setTimeout(() => document.getElementById('groupName').focus(), 50);
+            }
+
+            function openDeleteModal(id) {
+                document.getElementById('deletingId').value = id;
+                showModal('deleteModal');
+            }
+
+            function saveFormGroup() {
+                const nameInput = document.getElementById('groupName');
+                const val = nameInput.value.trim();
+                const editId = document.getElementById('editingId').value;
+
+                if (!val) {
+                    nameInput.focus();
+                    nameInput.classList.add('border-red-500');
+                    setTimeout(() => nameInput.classList.remove('border-red-500'), 1000);
+                    return;
+                }
+
+                if (editId) {
+                    const grp = groups.find(g => g.id === editId);
+                    if (grp) grp.name = val;
+                } else {
+                    groups.push({
+                        id: Date.now().toString(),
+                        name: val,
+                        called: false,
+                        createdAt: Date.now()
+                    });
+                }
+
+                saveGroups();
+                render();
+                hideModal('formModal');
+            }
+
+            function showModal(id) {
+                const modal = document.getElementById(id);
+                if (modal) {
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+            }
+
+            function hideModal(id) {
+                const modal = document.getElementById(id);
+                if (modal) {
+                    modal.classList.add('hidden');
+                    modal.classList.remove('flex');
+                }
+            }
+
+            // Synchronous Bootup Sequence
+            checkMode();
+            loadGroups();
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => {
+                    bindEvents();
+                    render();
+                });
+            } else {
+                bindEvents();
+                render();
+            }
+        })();
+    </script>
+</body>
+</html>
