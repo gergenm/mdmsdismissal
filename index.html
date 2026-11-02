@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mount Dora Middle School - Afternoon Dismissal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    @keyframes pulse-emerald {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    .dismissed-active {
+      animation: pulse-emerald 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-amber-500 selection:text-slate-900">
+
+  <!-- TOP HEADER -->
+  <header class="bg-slate-800/90 backdrop-blur border-b border-slate-700/80 sticky top-0 z-30 shadow-lg">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+      
+      <!-- School Title -->
+      <div class="flex items-center gap-3">
+        <div class="bg-amber-500 text-slate-900 font-extrabold text-xl sm:text-2xl px-3 py-1.5 rounded-lg tracking-wider shadow">
+          MDMS
+        </div>
+        <div>
+          <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight">Mount Dora Middle School</h1>
+          <p class="text-xs sm:text-sm text-slate-400 font-medium">Afternoon Dismissal Dashboard</p>
+        </div>
+      </div>
+
+      <!-- Controls & Status Header -->
+      <div class="flex items-center gap-2 sm:gap-4">
+        
+        <!-- Live Mode Switcher -->
+        <button id="viewModeToggleBtn" class="flex items-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-semibold px-3 py-2 rounded-lg border border-slate-600 transition shadow-sm">
+          <span id="modeIcon">🔒</span>
+          <span id="modeText">Teacher View</span>
+        </button>
+
+        <!-- Admin Control Buttons -->
+        <div id="adminControls" class="flex items-center gap-2">
+          <button id="editToggleBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-semibold px-3 py-2 rounded-lg border border-slate-600 transition">
+            ✏️ Edit Cards
+          </button>
+          
+          <button id="addGroupBtn" class="bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs sm:text-sm font-semibold px-3 py-2 rounded-lg border border-slate-600 transition">
+            ➕ Add
+          </button>
+          
+          <button id="resetBoardBtn" class="bg-rose-950/40 border border-rose-800/60 hover:bg-rose-900/50 text-rose-300 text-xs sm:text-sm font-semibold px-3 py-2 rounded-lg transition">
+            🔄 Reset
+          </button>
+          
+          <button id="shareBtn" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs sm:text-sm font-bold px-3 py-2 rounded-lg transition shadow-md">
+            📲 Share View
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN CONTENT CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+    
+    <!-- View Banner Notification -->
+    <div id="viewBanner" class="mb-6 p-4 rounded-xl border flex items-center justify-between bg-slate-800/60 border-slate-700 text-slate-300">
+      <div class="flex items-center gap-3">
+        <span id="bannerStatusDot" class="h-3 w-3 rounded-full bg-emerald-500 animate-pulse"></span>
+        <span id="bannerText" class="text-sm font-medium">Interactive Mode Active: Tap cards to dismiss or recall.</span>
+      </div>
+      <span id="syncBadge" class="text-xs bg-slate-700 px-2.5 py-1 rounded-full text-slate-300 font-mono">Realtime Sync Active</span>
+    </div>
+
+    <!-- Dismissal Grid -->
+    <div id="dismissalGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <!-- Grid items render dynamically via JavaScript -->
+    </div>
+
+  </main>
+
+  <!-- ADD / EDIT MODAL -->
+  <div id="groupModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+      <h3 id="modalTitle" class="text-xl font-bold text-white">Add Dismissal Category</h3>
+      <div>
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Category Name</label>
+        <input type="text" id="groupNameInput" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-500" placeholder="e.g. Bus 104, Walkers, Wave 2">
+      </div>
+      <div class="flex justify-end gap-3 pt-2">
+        <button id="cancelModalBtn" class="px-4 py-2 text-sm font-semibold text-slate-400 hover:text-white transition">Cancel</button>
+        <button id="saveModalBtn" class="px-5 py-2 text-sm font-bold bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl transition shadow">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHARE VIEW MODAL -->
+  <div id="shareModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl space-y-6">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-4">
+        <div>
+          <h3 class="text-xl font-bold text-white">Share Teacher View</h3>
+          <p class="text-xs text-slate-400 mt-1">Teachers can scan or use the link below to display live updates on Smartboards.</p>
+        </div>
+        <button id="closeShareModalBtn" class="text-slate-400 hover:text-white text-xl">✕</button>
+      </div>
+
+      <!-- QR Code Section -->
+      <div class="flex flex-col items-center justify-center p-4 bg-slate-900 rounded-xl border border-slate-700/80">
+        <div id="qrcode" class="p-3 bg-white rounded-lg shadow"></div>
+        <p class="text-xs text-slate-400 mt-3 font-medium">Scan with camera to view live dismissals</p>
+      </div>
+
+      <!-- Link Copy Section -->
+      <div class="space-y-2">
+        <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Teacher Direct Link</label>
+        <div class="flex gap-2">
+          <input type="text" id="shareUrlInput" readonly class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-300 font-mono focus:outline-none select-all">
+          <button id="copyUrlBtn" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded-xl transition">Copy</button>
+        </div>
+      </div>
+
+      <div class="pt-2 text-right">
+        <button id="doneShareBtn" class="px-5 py-2 text-sm font-bold bg-slate-700 hover:bg-slate-600 text-white rounded-xl transition">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT APPLICATION CORE -->
+  <script>
+    (function() {
+      // Default Groups Data
+      const DEFAULT_GROUPS = [
+        { id: '1', name: 'Bus 12', status: 'waiting' },
+        { id: '2', name: 'Bus 44', status: 'waiting' },
+        { id: '3', name: 'Car Riders (1st Wave)', status: 'waiting' },
+        { id: '4', name: 'Walkers & Bike Riders', status: 'waiting' },
+        { id: '5', name: 'Extended Day / After Care', status: 'waiting' },
+        { id: '6', name: 'Athletics & Clubs', status: 'waiting' }
+      ];
+
+      // BroadcastChannel Setup for Cross-Tab Syncing
+      const syncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('mdms_dismissal_sync') : null;
+
+      // App State
+      let groups = [];
+      let isEditMode = false;
+      let editingGroupId = null;
+
+      // Determine Mode based on Hash or Query Parameter
+      function isTeacherViewMode() {
+        return window.location.hash === '#teacher' || window.location.search.includes('mode=viewer');
+      }
+
+      // Load Saved State
+      function loadState() {
+        try {
+          const stored = localStorage.getItem('mdms_dismissal_groups');
+          groups = stored ? JSON.parse(stored) : DEFAULT_GROUPS;
+        } catch (e) {
+          groups = DEFAULT_GROUPS;
+        }
+      }
+
+      // Save & Broadcast State
+      function saveState(broadcast = true) {
+        try {
+          localStorage.setItem('mdms_dismissal_groups', JSON.stringify(groups));
+        } catch (e) {}
+
+        if (broadcast && syncChannel) {
+          syncChannel.postMessage({ type: 'STATE_UPDATE', groups: groups });
+        }
+        render();
+      }
+
+      // Render Dashboard Grid
+      function render() {
+        const grid = document.getElementById('dismissalGrid');
+        const isTeacher = isTeacherViewMode();
+        
+        // Update UI View Mode Controls
+        document.getElementById('adminControls').style.display = isTeacher ? 'none' : 'flex';
+        document.getElementById('modeText').innerText = isTeacher ? 'Admin View' : 'Teacher View';
+        document.getElementById('modeIcon').innerText = isTeacher ? '🔓' : '🔒';
+
+        // Update Banner Text
+        const bannerText = document.getElementById('bannerText');
+        const bannerDot = document.getElementById('bannerStatusDot');
+        
+        if (isTeacher) {
+          bannerText.innerText = "Teacher View Mode: Displaying live dismissal updates across campus.";
+          bannerDot.className = "h-3 w-3 rounded-full bg-amber-500 animate-pulse";
+        } else {
+          bannerText.innerText = isEditMode 
+            ? "Edit Mode Active: Click edit or delete buttons on individual category cards." 
+            : "Interactive Admin Mode: Tap any category card to switch between Waiting and Dismissed.";
+          bannerDot.className = isEditMode ? "h-3 w-3 rounded-full bg-amber-400" : "h-3 w-3 rounded-full bg-emerald-500 animate-pulse";
+        }
+
+        // Render Cards
+        grid.innerHTML = '';
+        groups.forEach(group => {
+          const isDismissed = group.status === 'dismissed';
+          const card = document.createElement('div');
+          
+          let cardStyle = "relative rounded-2xl p-6 transition-all duration-200 border flex flex-col justify-between shadow-md min-h-[160px] ";
+          if (isDismissed) {
+            cardStyle += "bg-emerald-600 border-emerald-400 text-white dismissed-active shadow-emerald-900/40 shadow-lg";
+          } else {
+            cardStyle += "bg-slate-800/90 border-slate-700/80 text-slate-100 hover:border-slate-600";
+          }
+
+          if (!isTeacher && !isEditMode) {
+            cardStyle += " cursor-pointer select-none active:scale-[0.98]";
+          }
+
+          card.className = cardStyle;
+          card.setAttribute('data-id', group.id);
+
+          const badgeHTML = isDismissed
+            ? `<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-white text-emerald-800 tracking-wide uppercase shadow-sm">
+                <span class="h-2 w-2 rounded-full bg-emerald-600 animate-ping"></span> DISMISSED
+               </span>`
+            : `<span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-slate-700 text-slate-300 tracking-wide uppercase">
+                WAITING
+               </span>`;
+
+          const adminButtonsHTML = (!isTeacher && isEditMode)
+            ? `<div class="flex items-center gap-2 mt-4 pt-4 border-t border-slate-700/60">
+                <button class="edit-card-btn flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 text-xs font-semibold py-2 rounded-lg transition" data-id="${group.id}">Edit</button>
+                <button class="delete-card-btn flex-1 bg-rose-950/60 hover:bg-rose-900 text-rose-300 text-xs font-semibold py-2 rounded-lg transition" data-id="${group.id}">Delete</button>
+               </div>`
+            : '';
+
+          card.innerHTML = `
+            <div>
+              <div class="flex items-start justify-between gap-2 mb-3">
+                <h2 class="text-2xl sm:text-3xl font-black tracking-tight leading-tight">${group.name}</h2>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-center justify-between mt-2">
+                ${badgeHTML}
+                <span class="text-xs opacity-75 font-mono">${isDismissed ? 'Ready for pickup' : 'In classroom'}</span>
+              </div>
+              ${adminButtonsHTML}
+            </div>
+          `;
+
+          // Card Click Action
+          if (!isTeacher && !isEditMode) {
+            card.addEventListener('click', (e) => {
+              if (e.target.closest('.edit-card-btn') || e.target.closest('.delete-card-btn')) return;
+              group.status = group.status === 'dismissed' ? 'waiting' : 'dismissed';
+              saveState();
+            });
+          }
+
+          grid.appendChild(card);
+        });
+
+        // Bind Card Action Buttons
+        if (!isTeacher && isEditMode) {
+          document.querySelectorAll('.edit-card-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              openModal(btn.getAttribute('data-id'));
+            });
+          });
+
+          document.querySelectorAll('.delete-card-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const id = btn.getAttribute('data-id');
+              groups = groups.filter(g => g.id !== id);
+              saveState();
+            });
+          });
+        }
+      }
+
+      // Modal Helpers
+      function openModal(id = null) {
+        editingGroupId = id;
+        const modal = document.getElementById('groupModal');
+        const input = document.getElementById('groupNameInput');
+        const title = document.getElementById('modalTitle');
+
+        if (id) {
+          const group = groups.find(g => g.id === id);
+          input.value = group ? group.name : '';
+          title.innerText = 'Edit Category Name';
+        } else {
+          input.value = '';
+          title.innerText = 'Add Dismissal Category';
+        }
+
+        modal.classList.remove('hidden');
+        input.focus();
+      }
+
+      function closeModal() {
+        document.getElementById('groupModal').classList.add('hidden');
+        editingGroupId = null;
+      }
+
+      // Event Listeners Setup
+      document.getElementById('viewModeToggleBtn').addEventListener('click', () => {
+        if (isTeacherViewMode()) {
+          window.location.hash = '';
+        } else {
+          window.location.hash = 'teacher';
+        }
+        render();
+      });
+
+      document.getElementById('editToggleBtn').addEventListener('click', () => {
+        isEditMode = !isEditMode;
+        document.getElementById('editToggleBtn').classList.toggle('bg-amber-500', isEditMode);
+        document.getElementById('editToggleBtn').classList.toggle('text-slate-950', isEditMode);
+        render();
+      });
+
+      document.getElementById('addGroupBtn').addEventListener('click', () => openModal());
+      document.getElementById('cancelModalBtn').addEventListener('click', closeModal);
+
+      document.getElementById('saveModalBtn').addEventListener('click', () => {
+        const input = document.getElementById('groupNameInput');
+        const val = input.value.trim();
+        if (!val) return;
+
+        if (editingGroupId) {
+          const group = groups.find(g => g.id === editingGroupId);
+          if (group) group.name = val;
+        } else {
+          groups.push({
+            id: Date.now().toString(),
+            name: val,
+            status: 'waiting'
+          });
+        }
+        closeModal();
+        saveState();
+      });
+
+      document.getElementById('resetBoardBtn').addEventListener('click', () => {
+        if (confirm('Reset all categories back to Waiting status?')) {
+          groups.forEach(g => g.status = 'waiting');
+          saveState();
+        }
+      });
+
+      // Share Modal Listeners
+      const shareModal = document.getElementById('shareModal');
+      document.getElementById('shareBtn').addEventListener('click', () => {
+        const teacherUrl = `${window.location.origin}${window.location.pathname}#teacher`;
+        document.getElementById('shareUrlInput').value = teacherUrl;
+
+        // Generate QR Code
+        const qrContainer = document.getElementById('qrcode');
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+          text: teacherUrl,
+          width: 160,
+          height: 160,
+          colorDark : "#0f172a",
+          colorLight : "#ffffff",
+          correctLevel : QRCode.CorrectLevel.H
+        });
+
+        shareModal.classList.remove('hidden');
+      });
+
+      document.getElementById('closeShareModalBtn').addEventListener('click', () => shareModal.classList.add('hidden'));
+      document.getElementById('doneShareBtn').addEventListener('click', () => shareModal.classList.add('hidden'));
+
+      document.getElementById('copyUrlBtn').addEventListener('click', () => {
+        const input = document.getElementById('shareUrlInput');
+        input.select();
+        navigator.clipboard.writeText(input.value).then(() => {
+          const btn = document.getElementById('copyUrlBtn');
+          btn.innerText = 'Copied!';
+          setTimeout(() => btn.innerText = 'Copy', 2000);
+        });
+      });
+
+      // Listen for Cross-Tab Sync Updates
+      if (syncChannel) {
+        syncChannel.onmessage = (event) => {
+          if (event.data && event.data.type === 'STATE_UPDATE') {
+            groups = event.data.groups;
+            render();
+          }
+        };
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'mdms_dismissal_groups') {
+          loadState();
+          render();
+        }
+      });
+
+      window.addEventListener('hashchange', () => render());
+
+      // Initialize Application
+      loadState();
+      render();
+    })();
+  </script>
+</body>
+</html>
